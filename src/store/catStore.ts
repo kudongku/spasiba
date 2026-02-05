@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type CatState = 'idle' | 'walking' | 'dragging';
+export type CatState = 'idle' | 'wander' | 'sit' | 'dragging';
 
 interface Position {
   x: number;
@@ -33,5 +33,5 @@ export const useCatStore = create<CatStore>((set) => ({
   setVelocity: (x: number, y: number) => set({ velocity: { x, y } }),
   setState: (state: CatState) => set({ state }),
   startDragging: () => set({ isDragging: true, state: 'dragging' }),
-  stopDragging: () => set({ isDragging: false, state: 'walking' }),
+  stopDragging: () => set({ isDragging: false, state: 'wander' }),
 }));
