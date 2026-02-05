@@ -2,19 +2,7 @@ import { type ThreeEvent, useFrame } from '@react-three/fiber';
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Shiba3DModel } from '@/game/entities/Shiba3DModel';
-
-// 시바견 상태 타입 정의
-type ShibaState =
-  | 'idle'
-  | 'wander'
-  | 'sit'
-  | 'dragging'
-  | 'following'
-  | 'catching'
-  | 'eating'
-  | 'gallop'
-  | 'playing'
-  | 'resting';
+import type { ShibaState } from '@/types/game';
 
 // 사용할 모델 타입 선택
 type ShibaType = Shiba3DModel;
@@ -142,19 +130,7 @@ const Shiba3DComponent = ({
         prevState.current = currentState;
 
         // 애니메이션 이모지로 상태 표시
-        const stateEmoji: Record<ShibaState, string> = {
-          idle: '🧍',
-          wander: '🚶',
-          sit: '🪑',
-          dragging: '✋',
-          following: '👀',
-          catching: '🎯',
-          eating: '🍽️',
-          gallop: '🏃',
-          playing: '⚔️',
-          resting: '😴',
-        };
-        console.log(`${stateEmoji[currentState]} Current state: ${currentState}`);
+        console.log(`Current state: ${currentState}`);
       }
 
       // Catching 상태 체크 (기존 로직 유지)
