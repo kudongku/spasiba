@@ -13,7 +13,7 @@ const TennisBallComponent = ({ position }: TennisBallComponentProps) => {
 
   // 테니스 공 엔티티 생성 (초기 위치는 0,0으로 시작하고 이후 setPosition으로 업데이트)
   useEffect(() => {
-    const tennis = new TennisBall(0, 0);
+    const tennis = new TennisBall();
     tennisRef.current = tennis;
     setTennisGroup(tennis.group);
 

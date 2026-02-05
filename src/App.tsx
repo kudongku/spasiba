@@ -1,9 +1,11 @@
 import ThreeCanvas from '@/components/ThreeCanvas';
+import TennisBallButton from '@/components/ui/TennisBallButton';
 
 function App() {
   return (
-    <div className="w-screen h-screen overflow-hidden">
+    <div className="relative w-screen h-screen overflow-hidden touch-none">
       <ThreeCanvas />
+      <TennisBallButton />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { gsap } from 'gsap';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import type { ShibaAnimationType, ShibaState } from '@/types/game';
 
 export class Shiba3DModel {
   public group: THREE.Group;
@@ -9,53 +10,31 @@ export class Shiba3DModel {
   private animations: Map<string, THREE.AnimationAction> = new Map();
   private currentAnimation: THREE.AnimationAction | null = null;
 
-  private velocity: { x: number; z: number };
   private isDragging: boolean;
   private screenWidth: number;
   private screenHeight: number;
-  private state:
-    | 'idle'
-    | 'wander'
-    | 'sit'
-    | 'dragging'
-    | 'following'
-    | 'catching'
-    | 'eating'
-    | 'gallop'
-    | 'playing'
-    | 'resting';
+  private state: ShibaState;
   private stateTimer: number;
   private stateDuration: number;
   private targetPosition: { x: number; z: number } | null;
   private gsapTween: gsap.core.Tween | null;
   private isModelLoaded: boolean;
   private isFollowing: boolean;
-  private catchingTimer: number;
-
-  // 로딩 상태
-  public isLoading: boolean;
-  public loadError: string | null;
 
   constructor(x: number, z: number, screenWidth: number, screenHeight: number) {
     this.group = new THREE.Group();
-    this.velocity = { x: 0, z: 0 };
     this.isDragging = false;
     this.screenWidth = screenWidth;
     this.screenHeight = screenHeight;
 
     // FSM 초기화
-    this.state = 'idle';
+    this.state = 'resting';
     this.stateTimer = 0;
     this.stateDuration = 0;
     this.targetPosition = null;
     this.gsapTween = null;
     this.isModelLoaded = false;
     this.isFollowing = false;
-    this.catchingTimer = 0;
-
-    // 로딩 상태
-    this.isLoading = true;
-    this.loadError = null;
 
     // 초기 위치
     this.group.position.set(x, 0, z);
@@ -66,9 +45,6 @@ export class Shiba3DModel {
    */
   public async loadModel(modelPath: string): Promise<void> {
     try {
-      this.isLoading = true;
-      this.loadError = null;
-
       const loader = new GLTFLoader();
       const gltf = await loader.loadAsync(modelPath);
 
@@ -77,15 +53,10 @@ export class Shiba3DModel {
 
       // 모델 바운딩 박스 계산 (디버깅용)
       const box = new THREE.Box3().setFromObject(this.model);
-      const size = box.getSize(new THREE.Vector3());
       const center = box.getCenter(new THREE.Vector3());
 
-      console.log('Model size:', size);
-      console.log('Model center:', center);
-      console.log('Model children count:', this.model.children.length);
-
-      // 모델 스케일 조정 (Shiba Inu 모델용 - 크기 증가)
-      this.model.scale.set(1, 1, 1);
+      // 모델 스케일 조정 (Shiba Inu 모델용 - 크기 1.2배)
+      this.model.scale.set(1.2, 1.2, 1.2);
 
       // 모델 위치 조정 (바닥에 맞춤 - 센터를 기준으로)
       this.model.position.y = -center.y;
@@ -99,198 +70,253 @@ export class Shiba3DModel {
         // 애니메이션 클립 매핑
         for (const clip of gltf.animations) {
           const action = this.mixer.clipAction(clip);
-          const normalizedName = this.normalizeAnimationName(clip.name);
+          const normalizedName = clip.name;
           this.animations.set(normalizedName, action);
-
-          console.log(`Animation loaded: ${clip.name} -> ${normalizedName}`);
         }
 
-        // 기본 애니메이션 시작 (idle)
-        this.playAnimation('idle');
+        // 기본 애니메이션 시작 (Idle)
+        this.playAnimation('Idle');
       } else {
         console.warn('No animations found in the model');
       }
 
       this.isModelLoaded = true;
-      this.isLoading = false;
 
       // 초기 상태 시작
       this.transitionToNextState();
-
-      console.log('Model loaded successfully');
     } catch (error) {
-      this.isLoading = false;
-      this.loadError = error instanceof Error ? error.message : 'Unknown error';
       console.error('Failed to load model:', error);
       throw error;
     }
   }
 
   /**
-   * 애니메이션 이름 정규화 (대소문자 무시, 공백 제거)
+   * resting 상태에서 랜덤 애니메이션 선택 (확률 기반)
    */
-  private normalizeAnimationName(name: string): string {
-    return name
-      .toLowerCase()
-      .trim()
-      .replace(/[\s_-]/g, '');
+  private selectRestingAnimation(): ShibaAnimationType {
+    const rand = Math.random();
+    if (rand < 0.35) return 'Idle'; // 35%
+    if (rand < 0.6) return 'Idle2'; // 25%
+    if (rand < 0.8) return 'Idle2headlow'; // 20%
+    if (rand < 0.9) return 'Eating'; // 10%
+    return 'Death'; // 10%
   }
 
   /**
-   * idle 상태에서 랜덤 애니메이션 선택
+   * moving 상태에서 확률 기반 애니메이션 선택
    */
-  private selectIdleAnimation(): string {
+  private selectMovingAnimation(): ShibaAnimationType {
     const rand = Math.random();
-    if (rand < 0.7) return 'idle';
-    if (rand < 0.85) return 'idle2';
-    if (rand < 0.95) return 'idle2headlow';
-    return Math.random() < 0.5 ? 'idlehitreactleft' : 'idlehitreactright';
+    if (rand < 0.4) return 'Walk'; // 40%
+    if (rand < 0.8) return 'Gallop'; // 40%
+    return 'Gallopjump'; // 20%
+  }
+
+  /**
+   * 방향 전환 감지
+   */
+  private previousAngle: number | null = null;
+
+  private detectDirectionChange(newAngle: number): 'left' | 'right' | null {
+    if (this.previousAngle === null) {
+      this.previousAngle = newAngle;
+      return null;
+    }
+
+    const angleDiff = newAngle - this.previousAngle;
+    const threshold = Math.PI / 4; // 45도
+
+    if (Math.abs(angleDiff) < threshold) {
+      return null;
+    }
+
+    this.previousAngle = newAngle;
+
+    // 각도 차이가 양수면 반시계방향(왼쪽), 음수면 시계방향(오른쪽)
+    return angleDiff > 0 ? 'left' : 'right';
   }
 
   /**
    * 애니메이션 재생 (부드러운 전환)
    */
-  private playAnimation(name: string): void {
+  private playAnimation(name: ShibaAnimationType | string): void {
     if (!this.mixer || this.animations.size === 0) return;
 
-    const normalizedName = this.normalizeAnimationName(name);
-    let action = this.animations.get(normalizedName);
+    const action = this.animations.get(name);
 
-    // 정확한 이름이 없으면 유사한 이름 찾기
-    if (!action) {
-      for (const [key, value] of this.animations.entries()) {
-        if (key.includes(normalizedName) || normalizedName.includes(key)) {
-          action = value;
-          console.log(`Animation fallback: ${name} -> ${key}`);
-          break;
-        }
-      }
-    }
-
-    // 애니메이션이 없으면 첫 번째 애니메이션 사용
-    if (!action && this.animations.size > 0) {
-      action = Array.from(this.animations.values())[0];
-      console.log(`Animation fallback: using first animation for ${name}`);
-    }
-
-    if (action && action !== this.currentAnimation) {
-      // 이전 애니메이션 페이드 아웃
-      if (this.currentAnimation) {
+    if (action) {
+      // 이전 애니메이션 정리 (death 애니메이션이 아닐 때만)
+      if (this.currentAnimation && action !== this.currentAnimation) {
         this.currentAnimation.fadeOut(0.3);
       }
 
-      // 새 애니메이션 페이드 인
-      action.reset().fadeIn(0.3).play();
-      action.setLoop(THREE.LoopRepeat, Number.POSITIVE_INFINITY);
+      // Death 애니메이션은 특별 처리: 정방향 -> 3초 대기 -> 역방향
+      if (name === 'Death') {
+        action.reset();
+        action.setLoop(THREE.LoopOnce, 1);
+        action.clampWhenFinished = true;
+        action.timeScale = 1;
+        action.setEffectiveWeight(1);
+        action.play();
+
+        // 애니메이션 길이 가져오기
+        const animationDuration = action.getClip().duration * 1000;
+
+        // 정방향 재생 완료 후 3초 대기
+        setTimeout(() => {
+          if (this.state !== 'resting') return;
+
+          // 3초 대기 후 역방향 재생
+          setTimeout(() => {
+            if (this.state !== 'resting') return;
+
+            // 역방향 재생: 새로 시작
+            action.reset();
+            action.time = action.getClip().duration; // 끝에서 시작
+            action.timeScale = -1; // 역방향
+            action.clampWhenFinished = false;
+            action.setLoop(THREE.LoopOnce, 1);
+            action.play();
+          }, 3000);
+        }, animationDuration);
+      } else if (action !== this.currentAnimation) {
+        // 일반 애니메이션
+        action.reset().fadeIn(0.3).play();
+        action.setLoop(THREE.LoopRepeat, Number.POSITIVE_INFINITY);
+      }
+
       this.currentAnimation = action;
     }
   }
 
+  /**
+   * 다음 상태로 전환 (resting 또는 moving)
+   */
   private transitionToNextState(): void {
     if (!this.isModelLoaded) return;
 
     const rand = Math.random();
 
-    // 확률 기반 상태 전환 (총 100%)
-    if (rand < 0.35) {
-      // 35%: 일반 배회
-      this.enterWanderState();
-    } else if (rand < 0.5) {
-      // 15%: 질주
-      this.enterGallopState();
-    } else if (rand < 0.7) {
-      // 20%: 대기 (다양한 idle 애니메이션)
-      this.enterIdleState();
-    } else if (rand < 0.85) {
-      // 15%: 앉기
-      this.enterSitState();
-    } else if (rand < 0.95) {
-      // 10%: 휴식 (머리 숙이기)
-      this.enterRestingState();
+    // 60% resting, 40% moving
+    if (rand < 0.6) {
+      this.enterResting();
     } else {
-      // 5%: 놀기/공격 동작
-      this.enterPlayingState();
+      this.enterMoving();
     }
   }
 
-  private enterIdleState(): void {
-    this.state = 'idle';
-    this.stateDuration = 3000 + Math.random() * 4000;
-    this.stateTimer = 0;
-    this.velocity = { x: 0, z: 0 };
-    this.stopGsapTween();
-    // 랜덤하게 다양한 idle 애니메이션 선택
-    this.playAnimation(this.selectIdleAnimation());
-  }
-
-  private enterWanderState(): void {
-    this.state = 'wander';
-    this.stateDuration = 5000 + Math.random() * 5000;
-    this.stateTimer = 0;
-
-    // 3D 공간에서의 랜덤 위치 (X, Z 평면)
-    const margin = 2;
-    this.targetPosition = {
-      x: -this.screenWidth / 2 + margin + Math.random() * (this.screenWidth - margin * 2),
-      z: -this.screenHeight / 2 + margin + Math.random() * (this.screenHeight - margin * 2),
-    };
-
-    this.playAnimation('walk');
-    this.moveToTarget();
-  }
-
-  private enterSitState(): void {
-    this.state = 'sit';
-    this.stateDuration = 4000 + Math.random() * 4000;
-    this.stateTimer = 0;
-    this.velocity = { x: 0, z: 0 };
-    this.stopGsapTween();
-    this.playAnimation('sit');
-  }
-
-  private enterEatingState(): void {
-    this.state = 'eating';
-    this.stateDuration = 2000 + Math.random() * 1000; // 2-3초
-    this.stateTimer = 0;
-    this.velocity = { x: 0, z: 0 };
-    this.stopGsapTween();
-    this.playAnimation('eating');
-  }
-
-  private enterGallopState(): void {
-    this.state = 'gallop';
-    this.stateDuration = 3000 + Math.random() * 3000; // 3-6초
-    this.stateTimer = 0;
-
-    // 질주 시에는 더 먼 거리로 이동
-    const margin = 2;
-    this.targetPosition = {
-      x: -this.screenWidth / 2 + margin + Math.random() * (this.screenWidth - margin * 2),
-      z: -this.screenHeight / 2 + margin + Math.random() * (this.screenHeight - margin * 2),
-    };
-
-    // 80% 확률로 gallop, 20% 확률로 gallopjump
-    const animation = Math.random() < 0.8 ? 'gallop' : 'gallopjump';
-    this.playAnimation(animation);
-    this.moveToTargetFast(); // 빠른 이동 메서드 사용
-  }
-
-  private enterPlayingState(): void {
-    this.state = 'playing';
-    this.stateDuration = 2000 + Math.random() * 2000; // 2-4초
-    this.stateTimer = 0;
-    this.velocity = { x: 0, z: 0 };
-    this.stopGsapTween();
-    this.playAnimation('attack');
-  }
-
-  private enterRestingState(): void {
+  /**
+   * Resting 상태 진입
+   */
+  private enterResting(): void {
     this.state = 'resting';
-    this.stateDuration = 4000 + Math.random() * 2000; // 4-6초
     this.stateTimer = 0;
-    this.velocity = { x: 0, z: 0 };
     this.stopGsapTween();
-    this.playAnimation('idle2headlow');
+
+    const selectedAnimation = this.selectRestingAnimation();
+
+    // Death 애니메이션은 더 긴 시간 필요 (정방향 + 3초 대기 + 역방향)
+    if (selectedAnimation === 'Death') {
+      const action = this.animations.get('Death');
+      const animationDuration = action ? action.getClip().duration * 1000 : 1000;
+      this.stateDuration = animationDuration * 2 + 3000; // 약 5-6초
+    } else {
+      this.stateDuration = 3000 + Math.random() * 4000; // 3-7초
+    }
+
+    this.playAnimation(selectedAnimation);
+  }
+
+  /**
+   * Moving 상태 진입
+   */
+  private enterMoving(): void {
+    this.state = 'moving';
+
+    // 랜덤 목표 위치 설정
+    const margin = 2;
+    this.targetPosition = {
+      x: -this.screenWidth / 2 + margin + Math.random() * (this.screenWidth - margin * 2),
+      z: -this.screenHeight / 2 + margin + Math.random() * (this.screenHeight - margin * 2),
+    };
+
+    const deltaX = this.targetPosition.x - this.group.position.x;
+    const deltaZ = this.targetPosition.z - this.group.position.z;
+    const distance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
+
+    this.stateDuration = distance * 1000; // 거리에 비례
+    this.stateTimer = 0;
+
+    // 방향 전환 체크
+    const targetAngle = Math.atan2(deltaX, deltaZ);
+    const direction = this.detectDirectionChange(targetAngle);
+
+    if (direction === 'left') {
+      this.enterMovingLeft(distance);
+    } else if (direction === 'right') {
+      this.enterMovingRight(distance);
+    } else {
+      // 확률 기반 애니메이션 선택
+      this.playAnimation(this.selectMovingAnimation());
+      this.moveToTarget(distance);
+    }
+  }
+
+  /**
+   * MovingLeft 상태 진입 (왼쪽 방향 전환)
+   */
+  private enterMovingLeft(distance: number): void {
+    this.state = 'movingLeft';
+    this.playAnimation('Idlehitreactleft');
+
+    // 0.5초 후 moving으로 전환
+    setTimeout(() => {
+      if (this.state === 'movingLeft') {
+        this.state = 'moving';
+        this.playAnimation(this.selectMovingAnimation());
+        this.moveToTarget(distance);
+      }
+    }, 500);
+  }
+
+  /**
+   * MovingRight 상태 진입 (오른쪽 방향 전환)
+   */
+  private enterMovingRight(distance: number): void {
+    this.state = 'movingRight';
+    this.playAnimation('Idlehitreactright');
+
+    // 0.5초 후 moving으로 전환
+    setTimeout(() => {
+      if (this.state === 'movingRight') {
+        this.state = 'moving';
+        this.playAnimation(this.selectMovingAnimation());
+        this.moveToTarget(distance);
+      }
+    }, 500);
+  }
+
+  /**
+   * Catching 상태 진입 (테니스 공 잡기)
+   */
+  private enterCatching(): void {
+    this.state = 'catching';
+    this.stopGsapTween();
+
+    // 1단계: Jumptoidle (1초)
+    this.playAnimation('Jumptoidle');
+
+    setTimeout(() => {
+      if (this.state === 'catching') {
+        // 2단계: Attack (1초)
+        this.playAnimation('Attack');
+
+        setTimeout(() => {
+          // 완료 후 resting으로
+          this.enterResting();
+        }, 1000);
+      }
+    }, 1000);
   }
 
   private stopGsapTween(): void {
@@ -300,19 +326,30 @@ export class Shiba3DModel {
     }
   }
 
-  private moveToTarget(): void {
+  /**
+   * 목표 지점으로 이동 (거리 기반 속도)
+   */
+  private moveToTarget(distance: number): void {
     if (!this.targetPosition) return;
 
     const deltaX = this.targetPosition.x - this.group.position.x;
     const deltaZ = this.targetPosition.z - this.group.position.z;
 
-    // 목표 방향 각도 계산 (라디안)
-    // atan2는 (-PI, PI) 범위를 반환하며, Z축이 앞쪽이므로 각도 조정
+    // 목표 방향 각도 계산
     const targetAngle = Math.atan2(deltaX, deltaZ);
 
-    const distance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
-    const moveDuration = distance / 2; // 일반 배회: 느린 속도
-    const rotateDuration = 0.5; // 회전 속도 (고정)
+    // 거리에 따른 속도 결정
+    let speed: number;
+    if (distance < 3) {
+      speed = 2; // walk: 느린 속도
+    } else if (distance < 8) {
+      speed = 3; // gallop: 중간 속도
+    } else {
+      speed = 4; // gallopjump: 빠른 속도
+    }
+
+    const moveDuration = distance / speed;
+    const rotateDuration = 0.4; // 회전 속도
 
     this.stopGsapTween();
 
@@ -326,7 +363,7 @@ export class Shiba3DModel {
       ease: 'power2.inOut',
     });
 
-    // 2. 회전하면서 동시에 이동 (약간의 딜레이 후)
+    // 2. 회전하면서 동시에 이동
     timeline.to(
       this.group.position,
       {
@@ -344,47 +381,6 @@ export class Shiba3DModel {
     this.gsapTween = timeline as unknown as gsap.core.Tween;
   }
 
-  private moveToTargetFast(): void {
-    if (!this.targetPosition) return;
-
-    const deltaX = this.targetPosition.x - this.group.position.x;
-    const deltaZ = this.targetPosition.z - this.group.position.z;
-
-    const targetAngle = Math.atan2(deltaX, deltaZ);
-
-    const distance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
-    const moveDuration = distance / 1.2; // 질주: 빠른 속도 (2배 빠름)
-    const rotateDuration = 0.3; // 회전도 더 빠르게
-
-    this.stopGsapTween();
-
-    const timeline = gsap.timeline();
-
-    // 빠른 회전
-    timeline.to(this.group.rotation, {
-      y: targetAngle,
-      duration: rotateDuration,
-      ease: 'power2.out',
-    });
-
-    // 빠른 이동
-    timeline.to(
-      this.group.position,
-      {
-        x: this.targetPosition.x,
-        z: this.targetPosition.z,
-        duration: moveDuration,
-        ease: 'power1.inOut',
-        onComplete: () => {
-          this.targetPosition = null;
-        },
-      },
-      '-=0.2'
-    );
-
-    this.gsapTween = timeline as unknown as gsap.core.Tween;
-  }
-
   public update(delta: number): void {
     // 애니메이션 믹서 업데이트
     if (this.mixer) {
@@ -395,21 +391,9 @@ export class Shiba3DModel {
       return;
     }
 
-    // Catching 상태 처리
-    if (this.state === 'catching') {
-      this.catchingTimer += delta * 1000; // 밀리초로 변환
-      if (this.catchingTimer >= 2000) {
-        // 2초 후 eating 상태로 전환
-        this.catchingTimer = 0;
-        this.enterEatingState();
-      }
+    // Catching, MovingLeft, MovingRight 상태는 타이머로 관리되므로 스킵
+    if (this.state === 'catching' || this.state === 'movingLeft' || this.state === 'movingRight') {
       return;
-    }
-
-    // Eating 상태 처리
-    if (this.state === 'eating') {
-      // eating 상태 타이머 업데이트는 아래의 일반 타이머 로직에서 처리
-      // eating이 끝나면 자동으로 transitionToNextState() 호출됨
     }
 
     // Following 모드일 때는 자동 상태 전환 비활성화
@@ -418,7 +402,7 @@ export class Shiba3DModel {
     }
 
     // 상태 타이머 업데이트
-    this.stateTimer += delta * 16.67;
+    this.stateTimer += delta * 1000; // 밀리초로 변환
 
     // 상태 지속 시간 체크
     if (this.stateTimer >= this.stateDuration) {
@@ -426,62 +410,21 @@ export class Shiba3DModel {
       return;
     }
 
-    // WANDER 상태에서 목표 지점 도착 시 새 목표 설정
-    if (this.state === 'wander' && !this.targetPosition) {
-      const margin = 2;
-      this.targetPosition = {
-        x: -this.screenWidth / 2 + margin + Math.random() * (this.screenWidth - margin * 2),
-        z: -this.screenHeight / 2 + margin + Math.random() * (this.screenHeight - margin * 2),
-      };
-      this.moveToTarget();
-    }
-
-    // GALLOP 상태에서 목표 지점 도착 시 새 목표 설정
-    if (this.state === 'gallop' && !this.targetPosition) {
-      const margin = 2;
-      this.targetPosition = {
-        x: -this.screenWidth / 2 + margin + Math.random() * (this.screenWidth - margin * 2),
-        z: -this.screenHeight / 2 + margin + Math.random() * (this.screenHeight - margin * 2),
-      };
-      const animation = Math.random() < 0.8 ? 'gallop' : 'gallopjump';
-      this.playAnimation(animation);
-      this.moveToTargetFast();
+    // Moving 상태에서 목표 지점 도착 체크
+    if (this.state === 'moving' && !this.targetPosition) {
+      this.transitionToNextState();
     }
   }
 
-  public getPosition(): { x: number; y: number; z: number } {
-    return {
-      x: this.group.position.x,
-      y: this.group.position.y,
-      z: this.group.position.z,
-    };
-  }
-
-  public getVelocity(): { x: number; z: number } {
-    return { ...this.velocity };
-  }
-
-  public getState():
-    | 'idle'
-    | 'wander'
-    | 'sit'
-    | 'dragging'
-    | 'following'
-    | 'catching'
-    | 'eating'
-    | 'gallop'
-    | 'playing'
-    | 'resting' {
+  public getState(): ShibaState {
     return this.state;
   }
 
   public setDragging(isDragging: boolean): void {
     this.isDragging = isDragging;
     if (isDragging) {
-      this.state = 'dragging';
       this.stopGsapTween();
-      this.velocity = { x: 0, z: 0 };
-      this.playAnimation('idle');
+      this.playAnimation('Idle');
       // 드래그 중에는 following 비활성화
       this.isFollowing = false;
     } else {
@@ -514,26 +457,21 @@ export class Shiba3DModel {
     const headDeltaZ = z - headZ;
     const distanceToHead = Math.sqrt(headDeltaX * headDeltaX + headDeltaZ * headDeltaZ);
 
-    // 머리 근처에 있으면 "잡는" 동작
+    // 머리 근처에 있으면 catching 상태로
     if (distanceToHead < 0.8) {
-      // 이미 catching 상태가 아닐 때만 전환
       if (this.state !== 'catching') {
-        console.log('🐕 Catching tennis ball! Distance to head:', distanceToHead);
-        this.state = 'catching';
-        this.catchingTimer = 0;
-        this.stopGsapTween();
-        this.playAnimation('sit'); // sit 애니메이션으로 "잡는" 동작 표현
+        this.enterCatching();
       }
       return;
     }
 
-    // 이제 following 상태로 설정
-    this.state = 'following';
-
-    // 전체 거리 계산 (이동 속도 계산용)
+    // 전체 거리 계산
     const deltaX = x - this.group.position.x;
     const deltaZ = z - this.group.position.z;
     const distance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
+
+    // 확률 기반 애니메이션 선택
+    this.playAnimation(this.selectMovingAnimation());
 
     // 목표 방향으로 회전 및 이동
     this.targetPosition = { x, z };
@@ -543,7 +481,6 @@ export class Shiba3DModel {
     const rotateDuration = 0.3;
 
     this.stopGsapTween();
-    this.playAnimation('walk');
 
     const timeline = gsap.timeline();
 
@@ -577,11 +514,6 @@ export class Shiba3DModel {
     this.group.position.z = z;
   }
 
-  public updateScreenSize(width: number, height: number): void {
-    this.screenWidth = width;
-    this.screenHeight = height;
-  }
-
   public destroy(): void {
     this.stopGsapTween();
 
@@ -613,12 +545,5 @@ export class Shiba3DModel {
       this.group.remove(this.model);
       this.model = null;
     }
-  }
-
-  /**
-   * 사용 가능한 애니메이션 목록 반환 (디버깅용)
-   */
-  public getAvailableAnimations(): string[] {
-    return Array.from(this.animations.keys());
   }
 }
