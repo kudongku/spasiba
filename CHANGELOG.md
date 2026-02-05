@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-02-05
+
+### Changed
+- 🐕 Replace Cat3DModel with Shiba3DModel (고양이 → 시바견)
+- 🎾 Replace YarnBall with TennisBall (실뭉치 → 테니스공)
+- 🌿 Add gradient ground with grass colors (초원색 그라데이션 바닥 추가)
+- 📝 Update project name and descriptions to reflect new theme
+- 🎨 Implement custom shader for radial and vertical gradient ground
+
+### Added
+- `Shiba3DComponent.tsx` - Interactive 3D Shiba Inu component
+- `TennisBallComponent.tsx` - 3D tennis ball component
+- `Shiba3DModel.ts` - Shiba Inu entity with FSM behaviors
+- `TennisBall.ts` - Tennis ball entity
+- `GradientGround` component with custom GLSL shaders
+
+### Removed
+- `Cat3DComponent.tsx` - Replaced by Shiba component
+- `YarnBallComponent.tsx` - Replaced by tennis ball component
+- `Cat3DModel.ts` - Replaced by Shiba model
+- `YarnBall.ts` - Replaced by tennis ball
+
+### Technical Details
+- Ground shader uses radial and vertical gradients
+- Colors: Light grass (#8bc34a) to dark grass (#558b2f)
+- Shiba model positioned at y=0 to align with ground plane
+
 ## [0.1.0] - 2026-02-05
 
 ### Added
@@ -39,5 +66,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Vite + React + TypeScript 보일러플레이트
 - 기본 프로젝트 구조 생성
 
+[0.2.0]: https://github.com/yourusername/save-the-cat/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/yourusername/save-the-cat/compare/v0.0.0...v0.1.0
 [0.0.0]: https://github.com/yourusername/save-the-cat/releases/tag/v0.0.0

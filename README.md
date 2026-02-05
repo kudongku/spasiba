@@ -1,8 +1,8 @@
-# Save The Cat
+# Spasiba
 
 > Version 0.1.0
 
-고양이를 구하는 3D 인터랙티브 게임 프로젝트입니다.
+시바견과 테니스 공으로 즐기는 3D 인터랙티브 게임 프로젝트입니다.
 
 ## 기술 스택
 
@@ -79,10 +79,10 @@ pnpm check
 └── src/
     ├── components/           # React 컴포넌트
     │   ├── ThreeCanvas.tsx       # Three.js 메인 캔버스
-    │   └── Cat3DComponent.tsx    # 3D 고양이 인터랙티브 컴포넌트
+    │   └── Shiba3DComponent.tsx  # 3D 시바견 인터랙티브 컴포넌트
     ├── game/                 # 게임 로직
     │   └── entities/
-    │       └── Cat3DModel.ts     # GLTF 3D 모델 로더 & FSM 로직
+    │       └── Shiba3DModel.ts   # GLTF 3D 모델 로더 & FSM 로직
     ├── App.tsx               # 메인 App 컴포넌트
     ├── main.tsx              # 진입점
     └── index.css             # 전역 스타일 (Tailwind)
@@ -103,7 +103,7 @@ pnpm check
 
 #### 기술적 변경사항
 - PixiJS에서 Three.js로 마이그레이션
-- 3D 고양이 모델 및 애니메이션 시스템 구축
+- 3D 시바견 모델 및 애니메이션 시스템 구축
 - TypeScript 5 + React 18 기반 아키텍처
 - Biome + Lefthook을 통한 코드 품질 관리 자동화
 

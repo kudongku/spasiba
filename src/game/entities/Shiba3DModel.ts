@@ -2,7 +2,7 @@ import { gsap } from 'gsap';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
-export class Cat3DModel {
+export class Shiba3DModel {
   public group: THREE.Group;
   private model: THREE.Group | null = null;
   private mixer: THREE.AnimationMixer | null = null;
@@ -13,12 +13,24 @@ export class Cat3DModel {
   private isDragging: boolean;
   private screenWidth: number;
   private screenHeight: number;
-  private state: 'idle' | 'wander' | 'sit' | 'dragging';
+  private state:
+    | 'idle'
+    | 'wander'
+    | 'sit'
+    | 'dragging'
+    | 'following'
+    | 'catching'
+    | 'eating'
+    | 'gallop'
+    | 'playing'
+    | 'resting';
   private stateTimer: number;
   private stateDuration: number;
   private targetPosition: { x: number; z: number } | null;
   private gsapTween: gsap.core.Tween | null;
   private isModelLoaded: boolean;
+  private isFollowing: boolean;
+  private catchingTimer: number;
 
   // 로딩 상태
   public isLoading: boolean;
@@ -38,6 +50,8 @@ export class Cat3DModel {
     this.targetPosition = null;
     this.gsapTween = null;
     this.isModelLoaded = false;
+    this.isFollowing = false;
+    this.catchingTimer = 0;
 
     // 로딩 상태
     this.isLoading = true;
@@ -123,6 +137,17 @@ export class Cat3DModel {
   }
 
   /**
+   * idle 상태에서 랜덤 애니메이션 선택
+   */
+  private selectIdleAnimation(): string {
+    const rand = Math.random();
+    if (rand < 0.7) return 'idle';
+    if (rand < 0.85) return 'idle2';
+    if (rand < 0.95) return 'idle2headlow';
+    return Math.random() < 0.5 ? 'idlehitreactleft' : 'idlehitreactright';
+  }
+
+  /**
    * 애니메이션 재생 (부드러운 전환)
    */
   private playAnimation(name: string): void {
@@ -166,12 +191,25 @@ export class Cat3DModel {
 
     const rand = Math.random();
 
-    if (rand < 0.6) {
+    // 확률 기반 상태 전환 (총 100%)
+    if (rand < 0.35) {
+      // 35%: 일반 배회
       this.enterWanderState();
-    } else if (rand < 0.8) {
+    } else if (rand < 0.5) {
+      // 15%: 질주
+      this.enterGallopState();
+    } else if (rand < 0.7) {
+      // 20%: 대기 (다양한 idle 애니메이션)
       this.enterIdleState();
-    } else {
+    } else if (rand < 0.85) {
+      // 15%: 앉기
       this.enterSitState();
+    } else if (rand < 0.95) {
+      // 10%: 휴식 (머리 숙이기)
+      this.enterRestingState();
+    } else {
+      // 5%: 놀기/공격 동작
+      this.enterPlayingState();
     }
   }
 
@@ -181,7 +219,8 @@ export class Cat3DModel {
     this.stateTimer = 0;
     this.velocity = { x: 0, z: 0 };
     this.stopGsapTween();
-    this.playAnimation('idle');
+    // 랜덤하게 다양한 idle 애니메이션 선택
+    this.playAnimation(this.selectIdleAnimation());
   }
 
   private enterWanderState(): void {
@@ -209,6 +248,51 @@ export class Cat3DModel {
     this.playAnimation('sit');
   }
 
+  private enterEatingState(): void {
+    this.state = 'eating';
+    this.stateDuration = 2000 + Math.random() * 1000; // 2-3초
+    this.stateTimer = 0;
+    this.velocity = { x: 0, z: 0 };
+    this.stopGsapTween();
+    this.playAnimation('eating');
+  }
+
+  private enterGallopState(): void {
+    this.state = 'gallop';
+    this.stateDuration = 3000 + Math.random() * 3000; // 3-6초
+    this.stateTimer = 0;
+
+    // 질주 시에는 더 먼 거리로 이동
+    const margin = 2;
+    this.targetPosition = {
+      x: -this.screenWidth / 2 + margin + Math.random() * (this.screenWidth - margin * 2),
+      z: -this.screenHeight / 2 + margin + Math.random() * (this.screenHeight - margin * 2),
+    };
+
+    // 80% 확률로 gallop, 20% 확률로 gallopjump
+    const animation = Math.random() < 0.8 ? 'gallop' : 'gallopjump';
+    this.playAnimation(animation);
+    this.moveToTargetFast(); // 빠른 이동 메서드 사용
+  }
+
+  private enterPlayingState(): void {
+    this.state = 'playing';
+    this.stateDuration = 2000 + Math.random() * 2000; // 2-4초
+    this.stateTimer = 0;
+    this.velocity = { x: 0, z: 0 };
+    this.stopGsapTween();
+    this.playAnimation('attack');
+  }
+
+  private enterRestingState(): void {
+    this.state = 'resting';
+    this.stateDuration = 4000 + Math.random() * 2000; // 4-6초
+    this.stateTimer = 0;
+    this.velocity = { x: 0, z: 0 };
+    this.stopGsapTween();
+    this.playAnimation('idle2headlow');
+  }
+
   private stopGsapTween(): void {
     if (this.gsapTween) {
       this.gsapTween.kill();
@@ -227,7 +311,7 @@ export class Cat3DModel {
     const targetAngle = Math.atan2(deltaX, deltaZ);
 
     const distance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
-    const moveDuration = distance / 2; // 이동 속도
+    const moveDuration = distance / 2; // 일반 배회: 느린 속도
     const rotateDuration = 0.5; // 회전 속도 (고정)
 
     this.stopGsapTween();
@@ -260,6 +344,47 @@ export class Cat3DModel {
     this.gsapTween = timeline as unknown as gsap.core.Tween;
   }
 
+  private moveToTargetFast(): void {
+    if (!this.targetPosition) return;
+
+    const deltaX = this.targetPosition.x - this.group.position.x;
+    const deltaZ = this.targetPosition.z - this.group.position.z;
+
+    const targetAngle = Math.atan2(deltaX, deltaZ);
+
+    const distance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
+    const moveDuration = distance / 1.2; // 질주: 빠른 속도 (2배 빠름)
+    const rotateDuration = 0.3; // 회전도 더 빠르게
+
+    this.stopGsapTween();
+
+    const timeline = gsap.timeline();
+
+    // 빠른 회전
+    timeline.to(this.group.rotation, {
+      y: targetAngle,
+      duration: rotateDuration,
+      ease: 'power2.out',
+    });
+
+    // 빠른 이동
+    timeline.to(
+      this.group.position,
+      {
+        x: this.targetPosition.x,
+        z: this.targetPosition.z,
+        duration: moveDuration,
+        ease: 'power1.inOut',
+        onComplete: () => {
+          this.targetPosition = null;
+        },
+      },
+      '-=0.2'
+    );
+
+    this.gsapTween = timeline as unknown as gsap.core.Tween;
+  }
+
   public update(delta: number): void {
     // 애니메이션 믹서 업데이트
     if (this.mixer) {
@@ -267,6 +392,28 @@ export class Cat3DModel {
     }
 
     if (this.isDragging || !this.isModelLoaded) {
+      return;
+    }
+
+    // Catching 상태 처리
+    if (this.state === 'catching') {
+      this.catchingTimer += delta * 1000; // 밀리초로 변환
+      if (this.catchingTimer >= 2000) {
+        // 2초 후 eating 상태로 전환
+        this.catchingTimer = 0;
+        this.enterEatingState();
+      }
+      return;
+    }
+
+    // Eating 상태 처리
+    if (this.state === 'eating') {
+      // eating 상태 타이머 업데이트는 아래의 일반 타이머 로직에서 처리
+      // eating이 끝나면 자동으로 transitionToNextState() 호출됨
+    }
+
+    // Following 모드일 때는 자동 상태 전환 비활성화
+    if (this.isFollowing) {
       return;
     }
 
@@ -288,6 +435,18 @@ export class Cat3DModel {
       };
       this.moveToTarget();
     }
+
+    // GALLOP 상태에서 목표 지점 도착 시 새 목표 설정
+    if (this.state === 'gallop' && !this.targetPosition) {
+      const margin = 2;
+      this.targetPosition = {
+        x: -this.screenWidth / 2 + margin + Math.random() * (this.screenWidth - margin * 2),
+        z: -this.screenHeight / 2 + margin + Math.random() * (this.screenHeight - margin * 2),
+      };
+      const animation = Math.random() < 0.8 ? 'gallop' : 'gallopjump';
+      this.playAnimation(animation);
+      this.moveToTargetFast();
+    }
   }
 
   public getPosition(): { x: number; y: number; z: number } {
@@ -302,7 +461,17 @@ export class Cat3DModel {
     return { ...this.velocity };
   }
 
-  public getState(): 'idle' | 'wander' | 'sit' | 'dragging' {
+  public getState():
+    | 'idle'
+    | 'wander'
+    | 'sit'
+    | 'dragging'
+    | 'following'
+    | 'catching'
+    | 'eating'
+    | 'gallop'
+    | 'playing'
+    | 'resting' {
     return this.state;
   }
 
@@ -313,9 +482,94 @@ export class Cat3DModel {
       this.stopGsapTween();
       this.velocity = { x: 0, z: 0 };
       this.playAnimation('idle');
+      // 드래그 중에는 following 비활성화
+      this.isFollowing = false;
     } else {
       this.transitionToNextState();
     }
+  }
+
+  public setFollowing(isFollowing: boolean): void {
+    this.isFollowing = isFollowing;
+    if (!isFollowing) {
+      // Following 모드 종료 시 다시 자유 배회
+      this.transitionToNextState();
+    }
+  }
+
+  public followTarget(x: number, z: number): void {
+    if (!this.isModelLoaded || this.isDragging) {
+      return;
+    }
+
+    this.isFollowing = true;
+
+    // 강아지 머리 위치 계산 (앞쪽으로 약 0.8 단위)
+    const headDistance = 0.8;
+    const headX = this.group.position.x + Math.sin(this.group.rotation.y) * headDistance;
+    const headZ = this.group.position.z + Math.cos(this.group.rotation.y) * headDistance;
+
+    // 테니스 공과 머리 사이의 거리 계산
+    const headDeltaX = x - headX;
+    const headDeltaZ = z - headZ;
+    const distanceToHead = Math.sqrt(headDeltaX * headDeltaX + headDeltaZ * headDeltaZ);
+
+    // 머리 근처에 있으면 "잡는" 동작
+    if (distanceToHead < 0.8) {
+      // 이미 catching 상태가 아닐 때만 전환
+      if (this.state !== 'catching') {
+        console.log('🐕 Catching tennis ball! Distance to head:', distanceToHead);
+        this.state = 'catching';
+        this.catchingTimer = 0;
+        this.stopGsapTween();
+        this.playAnimation('sit'); // sit 애니메이션으로 "잡는" 동작 표현
+      }
+      return;
+    }
+
+    // 이제 following 상태로 설정
+    this.state = 'following';
+
+    // 전체 거리 계산 (이동 속도 계산용)
+    const deltaX = x - this.group.position.x;
+    const deltaZ = z - this.group.position.z;
+    const distance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
+
+    // 목표 방향으로 회전 및 이동
+    this.targetPosition = { x, z };
+
+    const targetAngle = Math.atan2(deltaX, deltaZ);
+    const moveDuration = distance / 3; // 테니스 공 추적 속도 (빠르게)
+    const rotateDuration = 0.3;
+
+    this.stopGsapTween();
+    this.playAnimation('walk');
+
+    const timeline = gsap.timeline();
+
+    // 회전
+    timeline.to(this.group.rotation, {
+      y: targetAngle,
+      duration: rotateDuration,
+      ease: 'power2.out',
+    });
+
+    // 이동
+    timeline.to(
+      this.group.position,
+      {
+        x,
+        z,
+        duration: moveDuration,
+        ease: 'linear',
+        onComplete: () => {
+          this.targetPosition = null;
+        },
+      },
+      '-=0.2'
+    );
+
+    this.gsapTween = timeline as unknown as gsap.core.Tween;
   }
 
   public setPosition(x: number, z: number): void {
