@@ -2,7 +2,7 @@ import { gsap } from 'gsap';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
-export class Cat3DModel {
+export class Shiba3DModel {
   public group: THREE.Group;
   private model: THREE.Group | null = null;
   private mixer: THREE.AnimationMixer | null = null;
@@ -509,7 +509,7 @@ export class Cat3DModel {
     const headX = this.group.position.x + Math.sin(this.group.rotation.y) * headDistance;
     const headZ = this.group.position.z + Math.cos(this.group.rotation.y) * headDistance;
 
-    // 털실과 머리 사이의 거리 계산
+    // 테니스 공과 머리 사이의 거리 계산
     const headDeltaX = x - headX;
     const headDeltaZ = z - headZ;
     const distanceToHead = Math.sqrt(headDeltaX * headDeltaX + headDeltaZ * headDeltaZ);
@@ -518,7 +518,7 @@ export class Cat3DModel {
     if (distanceToHead < 0.8) {
       // 이미 catching 상태가 아닐 때만 전환
       if (this.state !== 'catching') {
-        console.log('🐕 Catching yarn! Distance to head:', distanceToHead);
+        console.log('🐕 Catching tennis ball! Distance to head:', distanceToHead);
         this.state = 'catching';
         this.catchingTimer = 0;
         this.stopGsapTween();
@@ -539,7 +539,7 @@ export class Cat3DModel {
     this.targetPosition = { x, z };
 
     const targetAngle = Math.atan2(deltaX, deltaZ);
-    const moveDuration = distance / 3; // 털실 추적 속도 (빠르게)
+    const moveDuration = distance / 3; // 테니스 공 추적 속도 (빠르게)
     const rotateDuration = 0.3;
 
     this.stopGsapTween();
