@@ -1,9 +1,9 @@
-import PixiCanvas from '@/components/PixiCanvas';
+import ThreeCanvas from '@/components/ThreeCanvas';
 
 function App() {
   return (
     <div className="w-screen h-screen overflow-hidden">
-      <PixiCanvas />
+      <ThreeCanvas />
     </div>
   );
 }
