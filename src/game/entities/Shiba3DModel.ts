@@ -186,15 +186,47 @@ export class Shiba3DModel {
       action = Array.from(this.animations.values())[0];
     }
 
-    if (action && action !== this.currentAnimation) {
-      // 이전 애니메이션 페이드 아웃
-      if (this.currentAnimation) {
+    if (action) {
+      // 이전 애니메이션 정리 (death 애니메이션이 아닐 때만)
+      if (this.currentAnimation && action !== this.currentAnimation) {
         this.currentAnimation.fadeOut(0.3);
       }
 
-      // 새 애니메이션 페이드 인
-      action.reset().fadeIn(0.3).play();
-      action.setLoop(THREE.LoopRepeat, Number.POSITIVE_INFINITY);
+      // death 애니메이션은 특별 처리: 정방향 -> 3초 대기 -> 역방향
+      if (normalizedName === 'death') {
+        action.reset();
+        action.setLoop(THREE.LoopOnce, 1);
+        action.clampWhenFinished = true;
+        action.timeScale = 1;
+        action.setEffectiveWeight(1);
+        action.play();
+
+        // 애니메이션 길이 가져오기
+        const animationDuration = action.getClip().duration * 1000;
+
+        // 정방향 재생 완료 후 3초 대기
+        setTimeout(() => {
+          if (this.state !== 'resting') return;
+
+          // 3초 대기 후 역방향 재생
+          setTimeout(() => {
+            if (this.state !== 'resting') return;
+
+            // 역방향 재생: 새로 시작
+            action.reset();
+            action.time = action.getClip().duration; // 끝에서 시작
+            action.timeScale = -1; // 역방향
+            action.clampWhenFinished = false;
+            action.setLoop(THREE.LoopOnce, 1);
+            action.play();
+          }, 3000);
+        }, animationDuration);
+      } else if (action !== this.currentAnimation) {
+        // 일반 애니메이션
+        action.reset().fadeIn(0.3).play();
+        action.setLoop(THREE.LoopRepeat, Number.POSITIVE_INFINITY);
+      }
+
       this.currentAnimation = action;
     }
   }
@@ -220,11 +252,23 @@ export class Shiba3DModel {
    */
   private enterResting(): void {
     this.state = 'resting';
-    this.stateDuration = 3000 + Math.random() * 4000; // 3-7초
     this.stateTimer = 0;
     this.velocity = { x: 0, z: 0 };
     this.stopGsapTween();
-    this.playAnimation(this.selectRestingAnimation());
+
+    const selectedAnimation = this.selectRestingAnimation();
+
+    // death 애니메이션은 더 긴 시간 필요 (정방향 + 3초 대기 + 역방향)
+    if (selectedAnimation === 'death') {
+      const normalizedName = this.normalizeAnimationName('death');
+      const action = this.animations.get(normalizedName);
+      const animationDuration = action ? action.getClip().duration * 1000 : 1000;
+      this.stateDuration = animationDuration * 2 + 3000; // 약 5-6초
+    } else {
+      this.stateDuration = 3000 + Math.random() * 4000; // 3-7초
+    }
+
+    this.playAnimation(selectedAnimation);
   }
 
   /**
