@@ -55,8 +55,8 @@ export class Shiba3DModel {
       const box = new THREE.Box3().setFromObject(this.model);
       const center = box.getCenter(new THREE.Vector3());
 
-      // 모델 스케일 조정 (Shiba Inu 모델용 - 크기 증가)
-      this.model.scale.set(1, 1, 1);
+      // 모델 스케일 조정 (Shiba Inu 모델용 - 크기 1.2배)
+      this.model.scale.set(1.2, 1.2, 1.2);
 
       // 모델 위치 조정 (바닥에 맞춤 - 센터를 기준으로)
       this.model.position.y = -center.y;

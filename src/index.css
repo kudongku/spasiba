@@ -2,18 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   margin: 0;
   padding: 0;
   overflow: hidden;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 #root {
   width: 100vw;
   height: 100vh;
+  height: 100dvh; /* 모바일 브라우저 주소창 고려 */
 }
 
 /* 테니스공 커서 스타일 */
 .tennis-ball-cursor {
-  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="%23ccff00" stroke="%23ffffff" stroke-width="2"/><path d="M 8 10 Q 16 16 8 22" fill="none" stroke="%23ffffff" stroke-width="2"/><path d="M 24 10 Q 16 16 24 22" fill="none" stroke="%23ffffff" stroke-width="2"/></svg>') 16 16, auto;
+  cursor:
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="%23ccff00" stroke="%23ffffff" stroke-width="2"/><path d="M 8 10 Q 16 16 8 22" fill="none" stroke="%23ffffff" stroke-width="2"/><path d="M 24 10 Q 16 16 24 22" fill="none" stroke="%23ffffff" stroke-width="2"/></svg>')
+    16 16,
+    auto;
+}
+
+/* 모바일 환경에서는 커서 숨김 (터치 디바이스) */
+@media (hover: none) and (pointer: coarse) {
+  .tennis-ball-cursor {
+    cursor: default;
+  }
 }

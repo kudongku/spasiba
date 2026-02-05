@@ -1,6 +1,6 @@
 import { OrbitControls } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import MouseTracker from '@/components/MouseTracker';
 import Shiba3DComponent from '@/components/Shiba3DComponent';
 import TennisBallComponent from '@/components/TennisBallComponent';
@@ -10,49 +10,75 @@ import { useGameStore } from '@/store/gameStore';
 const GROUND_COLOR = '#7cb342'; // 초원색
 const GROUND_OPACITY = 0.8;
 
+// 화면 크기별 카메라 설정
+const getCameraConfig = (width: number) => {
+  if (width < 640) {
+    // 모바일
+    return { position: [0, 10, 15] as [number, number, number], fov: 60 };
+  }
+  if (width < 1024) {
+    // 태블릿
+    return { position: [0, 9, 13] as [number, number, number], fov: 55 };
+  }
+  // 데스크톱
+  return { position: [0, 8, 12] as [number, number, number], fov: 50 };
+};
+
 const ThreeCanvas = () => {
-  const { isTennisBallCursor, setTennisBallCursor } = useGameStore();
-  const [isDraggingShiba, setIsDraggingShiba] = useState(false);
-  const [isCatching, setIsCatching] = useState(false);
-  const [mouseWorldPos, setMouseWorldPos] = useState<{ x: number; z: number } | null>(null);
-  const [showTennis, setShowTennis] = useState(true);
+  const isTennisBallCursor = useGameStore((state) => state.isTennisBallCursor);
+  const mouseWorldPos = useGameStore((state) => state.mouseWorldPos);
+  const isDraggingShiba = useGameStore((state) => state.isDraggingShiba);
+  const setIsDraggingShiba = useGameStore((state) => state.setIsDraggingShiba);
+  const showTennis = useGameStore((state) => state.showTennis);
 
-  const handleMouseMove = useCallback(
-    (worldPos: { x: number; z: number }) => {
-      // 커서가 활성화된 경우에만 마우스 위치 추적
-      if (!isTennisBallCursor) return;
+  // 화면 크기 감지
+  const [cameraConfig, setCameraConfig] = useState(() => getCameraConfig(window.innerWidth));
 
-      setMouseWorldPos(worldPos);
-      // 마우스 움직이면 테니스 공 다시 표시
-      if (!showTennis) {
-        setShowTennis(true);
-      }
-      // catching 상태 해제
-      if (isCatching) {
-        setIsCatching(false);
-      }
-    },
-    [isTennisBallCursor, showTennis, isCatching]
-  );
+  useEffect(() => {
+    const handleResize = () => {
+      setCameraConfig(getCameraConfig(window.innerWidth));
+    };
 
-  const handleCatchingChange = useCallback(
-    (catching: boolean) => {
-      setIsCatching(catching);
-      // catching 시작되면 테니스 공 숨김 및 커서 상태 해제
-      if (catching) {
-        setShowTennis(false);
-        setTennisBallCursor(false);
-      }
-    },
-    [setTennisBallCursor]
-  );
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handleMouseMove = useCallback((worldPos: { x: number; z: number }) => {
+    const state = useGameStore.getState();
+    // 커서가 활성화된 경우에만 마우스 위치 추적
+    if (!state.isTennisBallCursor) return;
+
+    state.setMouseWorldPos(worldPos);
+    // 마우스 움직이면 테니스 공 다시 표시
+    if (!state.showTennis) {
+      state.setShowTennis(true);
+    }
+    // catching 상태 해제
+    if (state.isCatching) {
+      state.setIsCatching(false);
+    }
+  }, []);
+
+  const handleCatchingChange = useCallback((catching: boolean) => {
+    const state = useGameStore.getState();
+    state.setIsCatching(catching);
+    // catching 시작되면 테니스 공 숨김 및 커서 상태 해제
+    if (catching) {
+      state.setShowTennis(false);
+      state.setTennisBallCursor(false);
+    }
+  }, []);
 
   return (
     <div
       className={isTennisBallCursor ? 'tennis-ball-cursor' : ''}
       style={{ width: '100%', height: '100%' }}
     >
-      <Canvas camera={{ position: [0, 8, 12], fov: 50 }} style={{ width: '100%', height: '100%' }}>
+      <Canvas
+        camera={{ position: cameraConfig.position, fov: cameraConfig.fov }}
+        style={{ width: '100%', height: '100%' }}
+        dpr={[1, 2]}
+      >
         <color attach="background" args={['#87CEEB']} />
 
         <ambientLight intensity={0.6} />
@@ -84,8 +110,9 @@ const ThreeCanvas = () => {
           enableRotate={false}
           enablePan={false}
           enableZoom={true}
-          minDistance={5}
-          maxDistance={20}
+          minDistance={window.innerWidth < 640 ? 8 : 5}
+          maxDistance={window.innerWidth < 640 ? 25 : 20}
+          zoomSpeed={window.innerWidth < 640 ? 0.5 : 1}
         />
       </Canvas>
     </div>

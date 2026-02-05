@@ -2,6 +2,7 @@ import { type ThreeEvent, useFrame } from '@react-three/fiber';
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Shiba3DModel } from '@/game/entities/Shiba3DModel';
+import { useGameStore } from '@/store/gameStore';
 
 interface Shiba3DComponentProps {
   onDragChange?: (isDragging: boolean) => void;
@@ -17,8 +18,11 @@ const Shiba3DComponent = ({
   const shibaRef = useRef<Shiba3DModel | null>(null);
   const [shibaGroup, setShibaGroup] = useState<THREE.Group>(new THREE.Group());
 
-  const [isDragging, setIsDragging] = useState(false);
-  const [isCatching, setIsCatching] = useState(false);
+  // Zustand 스토어에서 상태 가져오기
+  const isDraggingShiba = useGameStore((state) => state.isDraggingShiba);
+  const setIsDraggingShiba = useGameStore((state) => state.setIsDraggingShiba);
+  const isCatching = useGameStore((state) => state.isCatching);
+
   const dragPlaneRef = useRef<THREE.Plane>(new THREE.Plane());
   const dragOffsetRef = useRef<THREE.Vector3>(new THREE.Vector3());
   const prevCatchingState = useRef<boolean>(false);
@@ -64,13 +68,13 @@ const Shiba3DComponent = ({
   // 드래그 상태 변경 시 부모에게 알림
   useEffect(() => {
     if (onDragChange) {
-      onDragChange(isDragging);
+      onDragChange(isDraggingShiba);
     }
-  }, [isDragging, onDragChange]);
+  }, [isDraggingShiba, onDragChange]);
 
   // 테니스 공 위치 추적
   useEffect(() => {
-    if (!shibaRef.current || !tennisPosition || isDragging) {
+    if (!shibaRef.current || !tennisPosition || isDraggingShiba) {
       // 드래그 중이거나 테니스 공이 없으면 following 비활성화
       if (shibaRef.current && !tennisPosition) {
         shibaRef.current.setFollowing(false);
@@ -85,7 +89,7 @@ const Shiba3DComponent = ({
 
     // 테니스 공 위치로 이동
     shibaRef.current.followTarget(tennisPosition.x, tennisPosition.z);
-  }, [tennisPosition, isDragging, isCatching]);
+  }, [tennisPosition, isDraggingShiba, isCatching]);
 
   // 애니메이션 루프
   useFrame((_state, delta) => {
@@ -98,7 +102,7 @@ const Shiba3DComponent = ({
 
       if (currentIsCatching !== prevCatchingState.current) {
         prevCatchingState.current = currentIsCatching;
-        setIsCatching(currentIsCatching);
+        useGameStore.getState().setIsCatching(currentIsCatching);
         if (onCatchingChange) {
           onCatchingChange(currentIsCatching);
         }
@@ -109,7 +113,7 @@ const Shiba3DComponent = ({
   // 드래그 핸들러
   const handlePointerDown = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();
-    setIsDragging(true);
+    setIsDraggingShiba(true);
 
     if (shibaRef.current) {
       shibaRef.current.setDragging(true);
@@ -131,7 +135,7 @@ const Shiba3DComponent = ({
   };
 
   const handlePointerMove = (event: ThreeEvent<PointerEvent>) => {
-    if (!isDragging || !shibaRef.current) return;
+    if (!isDraggingShiba || !shibaRef.current) return;
 
     event.stopPropagation();
 
@@ -147,8 +151,8 @@ const Shiba3DComponent = ({
   };
 
   const handlePointerUp = () => {
-    if (isDragging && shibaRef.current) {
-      setIsDragging(false);
+    if (isDraggingShiba && shibaRef.current) {
+      setIsDraggingShiba(false);
       shibaRef.current.setDragging(false);
     }
   };
