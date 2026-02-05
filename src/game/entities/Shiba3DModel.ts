@@ -10,7 +10,6 @@ export class Shiba3DModel {
   private animations: Map<string, THREE.AnimationAction> = new Map();
   private currentAnimation: THREE.AnimationAction | null = null;
 
-  private velocity: { x: number; z: number };
   private isDragging: boolean;
   private screenWidth: number;
   private screenHeight: number;
@@ -28,7 +27,6 @@ export class Shiba3DModel {
 
   constructor(x: number, z: number, screenWidth: number, screenHeight: number) {
     this.group = new THREE.Group();
-    this.velocity = { x: 0, z: 0 };
     this.isDragging = false;
     this.screenWidth = screenWidth;
     this.screenHeight = screenHeight;
@@ -83,12 +81,12 @@ export class Shiba3DModel {
         // 애니메이션 클립 매핑
         for (const clip of gltf.animations) {
           const action = this.mixer.clipAction(clip);
-          const normalizedName = this.normalizeAnimationName(clip.name);
+          const normalizedName = clip.name;
           this.animations.set(normalizedName, action);
         }
 
-        // 기본 애니메이션 시작 (idle)
-        this.playAnimation('idle');
+        // 기본 애니메이션 시작 (Idle)
+        this.playAnimation('Idle');
       } else {
         console.warn('No animations found in the model');
       }
@@ -107,25 +105,15 @@ export class Shiba3DModel {
   }
 
   /**
-   * 애니메이션 이름 정규화 (대소문자 무시, 공백 제거)
-   */
-  private normalizeAnimationName(name: string): string {
-    return name
-      .toLowerCase()
-      .trim()
-      .replace(/[\s_-]/g, '');
-  }
-
-  /**
    * resting 상태에서 랜덤 애니메이션 선택 (확률 기반)
    */
   private selectRestingAnimation(): ShibaAnimationType {
     const rand = Math.random();
-    if (rand < 0.35) return 'idle'; // 35%
-    if (rand < 0.6) return 'idle2'; // 25%
-    if (rand < 0.8) return 'idle2headlow'; // 20%
-    if (rand < 0.9) return 'eating'; // 10%
-    return 'death'; // 10%
+    if (rand < 0.35) return 'Idle'; // 35%
+    if (rand < 0.6) return 'Idle2'; // 25%
+    if (rand < 0.8) return 'Idle2headlow'; // 20%
+    if (rand < 0.9) return 'Eating'; // 10%
+    return 'Death'; // 10%
   }
 
   /**
@@ -133,9 +121,9 @@ export class Shiba3DModel {
    */
   private selectMovingAnimation(): ShibaAnimationType {
     const rand = Math.random();
-    if (rand < 0.4) return 'walk'; // 40%
-    if (rand < 0.8) return 'gallop'; // 40%
-    return 'gallopjump'; // 20%
+    if (rand < 0.4) return 'Walk'; // 40%
+    if (rand < 0.8) return 'Gallop'; // 40%
+    return 'Gallopjump'; // 20%
   }
 
   /**
@@ -168,23 +156,8 @@ export class Shiba3DModel {
   private playAnimation(name: ShibaAnimationType | string): void {
     if (!this.mixer || this.animations.size === 0) return;
 
-    const normalizedName = this.normalizeAnimationName(name);
-    let action = this.animations.get(normalizedName);
-
-    // 정확한 이름이 없으면 유사한 이름 찾기
-    if (!action) {
-      for (const [key, value] of this.animations.entries()) {
-        if (key.includes(normalizedName) || normalizedName.includes(key)) {
-          action = value;
-          break;
-        }
-      }
-    }
-
-    // 애니메이션이 없으면 첫 번째 애니메이션 사용
-    if (!action && this.animations.size > 0) {
-      action = Array.from(this.animations.values())[0];
-    }
+    const normalizedName = name;
+    const action = this.animations.get(normalizedName);
 
     if (action) {
       // 이전 애니메이션 정리 (death 애니메이션이 아닐 때만)
@@ -192,7 +165,7 @@ export class Shiba3DModel {
         this.currentAnimation.fadeOut(0.3);
       }
 
-      // death 애니메이션은 특별 처리: 정방향 -> 3초 대기 -> 역방향
+      // Death 애니메이션은 특별 처리: 정방향 -> 3초 대기 -> 역방향
       if (normalizedName === 'death') {
         action.reset();
         action.setLoop(THREE.LoopOnce, 1);
@@ -253,14 +226,13 @@ export class Shiba3DModel {
   private enterResting(): void {
     this.state = 'resting';
     this.stateTimer = 0;
-    this.velocity = { x: 0, z: 0 };
     this.stopGsapTween();
 
     const selectedAnimation = this.selectRestingAnimation();
 
-    // death 애니메이션은 더 긴 시간 필요 (정방향 + 3초 대기 + 역방향)
-    if (selectedAnimation === 'death') {
-      const normalizedName = this.normalizeAnimationName('death');
+    // Death 애니메이션은 더 긴 시간 필요 (정방향 + 3초 대기 + 역방향)
+    if (selectedAnimation === 'Death') {
+      const normalizedName = 'Death';
       const action = this.animations.get(normalizedName);
       const animationDuration = action ? action.getClip().duration * 1000 : 1000;
       this.stateDuration = animationDuration * 2 + 3000; // 약 5-6초
@@ -311,7 +283,7 @@ export class Shiba3DModel {
    */
   private enterMovingLeft(distance: number): void {
     this.state = 'movingLeft';
-    this.playAnimation('idlehitreactleft');
+    this.playAnimation('Idlehitreactleft');
 
     // 0.5초 후 moving으로 전환
     setTimeout(() => {
@@ -328,7 +300,7 @@ export class Shiba3DModel {
    */
   private enterMovingRight(distance: number): void {
     this.state = 'movingRight';
-    this.playAnimation('idlehitreactright');
+    this.playAnimation('Idlehitreactright');
 
     // 0.5초 후 moving으로 전환
     setTimeout(() => {
@@ -347,13 +319,13 @@ export class Shiba3DModel {
     this.state = 'catching';
     this.stopGsapTween();
 
-    // 1단계: jumptoidle (1초)
-    this.playAnimation('jumptoidle');
+    // 1단계: Jumptoidle (1초)
+    this.playAnimation('Jumptoidle');
 
     setTimeout(() => {
       if (this.state === 'catching') {
-        // 2단계: attack (1초)
-        this.playAnimation('attack');
+        // 2단계: Attack (1초)
+        this.playAnimation('Attack');
 
         setTimeout(() => {
           // 완료 후 resting으로
@@ -460,18 +432,6 @@ export class Shiba3DModel {
     }
   }
 
-  public getPosition(): { x: number; y: number; z: number } {
-    return {
-      x: this.group.position.x,
-      y: this.group.position.y,
-      z: this.group.position.z,
-    };
-  }
-
-  public getVelocity(): { x: number; z: number } {
-    return { ...this.velocity };
-  }
-
   public getState(): ShibaState {
     return this.state;
   }
@@ -480,8 +440,7 @@ export class Shiba3DModel {
     this.isDragging = isDragging;
     if (isDragging) {
       this.stopGsapTween();
-      this.velocity = { x: 0, z: 0 };
-      this.playAnimation('idle');
+      this.playAnimation('Idle');
       // 드래그 중에는 following 비활성화
       this.isFollowing = false;
     } else {
@@ -607,12 +566,5 @@ export class Shiba3DModel {
       this.group.remove(this.model);
       this.model = null;
     }
-  }
-
-  /**
-   * 사용 가능한 애니메이션 목록 반환 (디버깅용)
-   */
-  public getAvailableAnimations(): string[] {
-    return Array.from(this.animations.keys());
   }
 }

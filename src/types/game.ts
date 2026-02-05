@@ -4,18 +4,18 @@
  * - 전체 경로: animalarmature|attack 등
  */
 export type ShibaAnimationType =
-  | 'attack' // 물어
-  | 'death' // 죽은척
-  | 'eating' // 먹어
-  | 'gallop' // 뛰어
-  | 'gallopjump' // 뛰면서 점프
-  | 'idlehitreactleft' // 완쪽 반응
-  | 'idlehitreactright' // 오른쪽 반응
-  | 'jumptoidle' // 점프 후 대기
-  | 'walk' // 걸어
-  | 'idle2headlow' // 대기3
-  | 'idle2' // 대기2
-  | 'idle'; // 대기1
+  | 'Attack' // 물어
+  | 'Death' // 죽은척
+  | 'Eating' // 먹어
+  | 'Gallop' // 뛰어
+  | 'Gallopjump' // 뛰면서 점프
+  | 'Idlehitreactleft' // 완쪽 반응
+  | 'Idlehitreactright' // 오른쪽 반응
+  | 'Jumptoidle' // 점프 후 대기
+  | 'Walk' // 걸어
+  | 'Idle2headlow' // 대기3
+  | 'Idle2' // 대기2
+  | 'Idle'; // 대기1
 
 /**
  * Shiba 상태 머신 타입
