@@ -1,0 +1,25 @@
+# Lefthook configuration for save-the-cat project
+# https://github.com/evilmartians/lefthook/blob/master/docs/configuration.md
+
+pre-commit:
+  parallel: true
+  commands:
+    biome:
+      glob: "*.{js,jsx,ts,tsx,json}"
+      run: npx @biomejs/biome check --write --no-errors-on-unmatched {staged_files}
+      stage_fixed: true
+
+    typecheck:
+      glob: "*.{ts,tsx}"
+      run: npx tsc --noEmit
+      skip:
+        - merge
+        - rebase
+
+pre-push:
+  commands:
+    build:
+      run: npm run build
+      skip:
+        - merge
+        - rebase
