@@ -1,5 +1,7 @@
 # Save The Cat
 
+> Version 0.1.0
+
 고양이를 구하는 3D 인터랙티브 게임 프로젝트입니다.
 
 ## 기술 스택
@@ -85,3 +87,28 @@ pnpm check
     ├── main.tsx              # 진입점
     └── index.css             # 전역 스타일 (Tailwind)
 ```
+
+## 릴리스 노트
+
+### v0.1.0 (2026-02-05)
+
+**첫 번째 마일스톤: Three.js 3D 렌더링 구현 완료**
+
+#### 주요 기능
+- ✅ Three.js 기반 3D 렌더링 엔진 통합
+- ✅ React Three Fiber를 활용한 React 통합
+- ✅ GSAP 애니메이션 시스템 구현
+- ✅ 3D 모델 로더 (GLB 형식 지원)
+- ✅ FSM 기반 상태 관리 시스템
+
+#### 기술적 변경사항
+- PixiJS에서 Three.js로 마이그레이션
+- 3D 고양이 모델 및 애니메이션 시스템 구축
+- TypeScript 5 + React 18 기반 아키텍처
+- Biome + Lefthook을 통한 코드 품질 관리 자동화
+
+#### 다음 마일스톤 (v0.2.0)
+- 게임 로직 구현
+- 상태 관리 (Zustand)
+- 사운드 시스템
+- UI/UX 개선
