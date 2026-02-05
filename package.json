@@ -1,7 +1,7 @@
 {
   "name": "spasiba",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,9 @@
     "format": "biome format --write .",
     "check": "biome check --write .",
     "preview": "vite preview",
-    "prepare": "lefthook install"
+    "prepare": "lefthook install",
+    "predeploy": "pnpm run build",
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "@react-three/drei": "9.114.3",
@@ -30,6 +32,7 @@
     "@types/three": "0.169.0",
     "@vitejs/plugin-react": "^4.7.0",
     "autoprefixer": "^10.4.24",
+    "gh-pages": "^6.2.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.19",
     "typescript": "^5.9.3",

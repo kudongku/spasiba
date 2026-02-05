@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-02-05
+
+### Added
+- 📱 Full responsive design implementation
+  - Dynamic camera positioning based on screen size (mobile/tablet/desktop)
+  - Responsive UI button sizing with Tailwind breakpoints
+  - Touch device optimization (touch-action, tap-highlight removal)
+  - Mobile browser address bar handling with `100dvh`
+  - Device pixel ratio optimization for better performance
+- 🚀 GitHub Pages deployment configuration
+  - Added `gh-pages` package for automated deployment
+  - Configured Vite base path for GitHub Pages
+  - Added deploy scripts to package.json
+- 📐 Custom Tailwind breakpoint (xs: 475px)
+
+### Changed
+- 🐕 Increased Shiba Inu model size by 1.2x
+- 📷 Camera FOV and position now adjust based on viewport width
+  - Mobile: fov 60, position [0, 10, 15]
+  - Tablet: fov 55, position [0, 9, 13]
+  - Desktop: fov 50, position [0, 8, 12]
+- 🎮 Improved OrbitControls zoom range for different screen sizes
+- 🎨 Enhanced CSS for better mobile UX
+  - Prevented unwanted touch gestures
+  - Disabled text selection during interaction
+  - Added touch-manipulation for better button interaction
+
+### Technical Details
+- Responsive breakpoints: xs(475px), sm(640px), md(768px), lg(1024px), xl(1280px)
+- Touch device cursor handling with media queries
+- Automatic window resize detection and camera reconfiguration
+- Performance optimization with adaptive device pixel ratio
+
 ## [0.2.0] - 2026-02-05
 
 ### Changed
@@ -66,6 +99,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Vite + React + TypeScript 보일러플레이트
 - 기본 프로젝트 구조 생성
 
+[0.3.0]: https://github.com/yourusername/save-the-cat/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/yourusername/save-the-cat/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/yourusername/save-the-cat/compare/v0.0.0...v0.1.0
 [0.0.0]: https://github.com/yourusername/save-the-cat/releases/tag/v0.0.0
