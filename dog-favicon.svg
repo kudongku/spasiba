@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="32" fill="#FFD700"/>
+  
+  <!-- Dog face -->
+  <circle cx="32" cy="32" r="24" fill="#D2691E"/>
+  
+  <!-- Left ear -->
+  <ellipse cx="18" cy="20" rx="8" ry="12" fill="#8B4513"/>
+  
+  <!-- Right ear -->
+  <ellipse cx="46" cy="20" rx="8" ry="12" fill="#8B4513"/>
+  
+  <!-- Snout -->
+  <ellipse cx="32" cy="38" rx="12" ry="10" fill="#F4A460"/>
+  
+  <!-- Nose -->
+  <ellipse cx="32" cy="36" rx="4" ry="3" fill="#000000"/>
+  
+  <!-- Left eye -->
+  <circle cx="24" cy="28" r="3" fill="#000000"/>
+  <circle cx="25" cy="27" r="1" fill="#FFFFFF"/>
+  
+  <!-- Right eye -->
+  <circle cx="40" cy="28" r="3" fill="#000000"/>
+  <circle cx="41" cy="27" r="1" fill="#FFFFFF"/>
+  
+  <!-- Mouth -->
+  <path d="M 32 38 Q 28 42 24 40" stroke="#000000" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <path d="M 32 38 Q 36 42 40 40" stroke="#000000" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  
+  <!-- Spots -->
+  <circle cx="38" cy="42" r="3" fill="#8B4513" opacity="0.6"/>
+  <circle cx="26" cy="44" r="2.5" fill="#8B4513" opacity="0.6"/>
+</svg>
