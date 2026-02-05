@@ -1,10 +1,10 @@
 import { type ThreeEvent, useFrame } from '@react-three/fiber';
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { Cat3DModel } from '@/game/entities/Cat3DModel';
+import { Shiba3DModel } from '@/game/entities/Shiba3DModel';
 
-// 고양이 상태 타입 정의
-type CatState =
+// 시바견 상태 타입 정의
+type ShibaState =
   | 'idle'
   | 'wander'
   | 'sit'
@@ -17,17 +17,21 @@ type CatState =
   | 'resting';
 
 // 사용할 모델 타입 선택
-type CatType = Cat3DModel;
+type ShibaType = Shiba3DModel;
 
-interface Cat3DComponentProps {
+interface Shiba3DComponentProps {
   onDragChange?: (isDragging: boolean) => void;
   onCatchingChange?: (isCatching: boolean) => void;
-  yarnPosition?: { x: number; z: number } | null;
+  tennisPosition?: { x: number; z: number } | null;
 }
 
-const Cat3DComponent = ({ onDragChange, onCatchingChange, yarnPosition }: Cat3DComponentProps) => {
-  const catRef = useRef<CatType | null>(null);
-  const [catGroup, setCatGroup] = useState<THREE.Group | null>(null);
+const Shiba3DComponent = ({
+  onDragChange,
+  onCatchingChange,
+  tennisPosition,
+}: Shiba3DComponentProps) => {
+  const shibaRef = useRef<ShibaType | null>(null);
+  const [shibaGroup, setShibaGroup] = useState<THREE.Group | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -36,34 +40,34 @@ const Cat3DComponent = ({ onDragChange, onCatchingChange, yarnPosition }: Cat3DC
   const dragPlaneRef = useRef<THREE.Plane>(new THREE.Plane());
   const dragOffsetRef = useRef<THREE.Vector3>(new THREE.Vector3());
   const prevCatchingState = useRef<boolean>(false);
-  const prevState = useRef<CatState | null>(null);
+  const prevState = useRef<ShibaState | null>(null);
 
   // 모델 로딩
   useEffect(() => {
     let isMounted = true;
 
-    const loadCat = async () => {
+    const loadShiba = async () => {
       try {
         setIsLoading(true);
         setLoadError(null);
 
         // 3D 모델 로드 시도
-        const catModel = new Cat3DModel(0, 0, 20, 20);
+        const shibaModel = new Shiba3DModel(0, 0, 20, 20);
 
         // 모델 파일 로드 (public 폴더의 파일)
-        await catModel.loadModel('/models/Shiba%20Inu.glb');
+        await shibaModel.loadModel('/models/Shiba%20Inu.glb');
 
         if (!isMounted) {
-          catModel.destroy();
+          shibaModel.destroy();
           return;
         }
 
-        catRef.current = catModel;
-        setCatGroup(catModel.group);
+        shibaRef.current = shibaModel;
+        setShibaGroup(shibaModel.group);
         setIsLoading(false);
 
         console.log('3D model loaded successfully');
-        console.log('Available animations:', catModel.getAvailableAnimations());
+        console.log('Available animations:', shibaModel.getAvailableAnimations());
       } catch (error) {
         console.error('Failed to load 3D model:', error);
 
@@ -74,25 +78,25 @@ const Cat3DComponent = ({ onDragChange, onCatchingChange, yarnPosition }: Cat3DC
       }
     };
 
-    loadCat();
+    loadShiba();
 
     return () => {
       isMounted = false;
-      if (catRef.current) {
-        catRef.current.destroy();
-        catRef.current = null;
+      if (shibaRef.current) {
+        shibaRef.current.destroy();
+        shibaRef.current = null;
       }
-      setCatGroup(null);
+      setShibaGroup(null);
     };
   }, []);
 
   // 화면 크기 업데이트
   useEffect(() => {
-    if (catRef.current) {
+    if (shibaRef.current) {
       // Three.js 단위로 변환 (픽셀 → 월드 단위)
       const worldWidth = 20;
       const worldHeight = 20;
-      catRef.current.updateScreenSize(worldWidth, worldHeight);
+      shibaRef.current.updateScreenSize(worldWidth, worldHeight);
     }
   }, []);
 
@@ -103,42 +107,42 @@ const Cat3DComponent = ({ onDragChange, onCatchingChange, yarnPosition }: Cat3DC
     }
   }, [isDragging, onDragChange]);
 
-  // 털실 위치 추적
+  // 테니스 공 위치 추적
   useEffect(() => {
-    if (!catRef.current || !yarnPosition || isDragging) {
-      // 드래그 중이거나 털실이 없으면 following 비활성화
-      if (catRef.current && !yarnPosition) {
-        catRef.current.setFollowing(false);
+    if (!shibaRef.current || !tennisPosition || isDragging) {
+      // 드래그 중이거나 테니스 공이 없으면 following 비활성화
+      if (shibaRef.current && !tennisPosition) {
+        shibaRef.current.setFollowing(false);
       }
       return;
     }
 
     // catching 상태면 following 멈춤
     if (isCatching) {
-      console.log('⏸️  Stopping follow - cat is catching');
+      console.log('⏸️  Stopping follow - shiba is catching');
       return;
     }
 
-    // 털실 위치로 이동
-    catRef.current.followTarget(yarnPosition.x, yarnPosition.z);
-  }, [yarnPosition, isDragging, isCatching]);
+    // 테니스 공 위치로 이동
+    shibaRef.current.followTarget(tennisPosition.x, tennisPosition.z);
+  }, [tennisPosition, isDragging, isCatching]);
 
   // 애니메이션 루프
   useFrame((_state, delta) => {
-    if (catRef.current && !isLoading) {
-      // Cat3DModel은 delta를 직접 사용
-      catRef.current.update(delta);
+    if (shibaRef.current && !isLoading) {
+      // Shiba3DModel은 delta를 직접 사용
+      shibaRef.current.update(delta);
 
       // 상태 변경 추적
-      const currentState = catRef.current.getState();
+      const currentState = shibaRef.current.getState();
 
       // 상태가 변경되었을 때 로그 출력
       if (currentState !== prevState.current) {
-        console.log(`🐕 Cat state changed: ${prevState.current} → ${currentState}`);
+        console.log(`🐕 Shiba state changed: ${prevState.current} → ${currentState}`);
         prevState.current = currentState;
 
         // 애니메이션 이모지로 상태 표시
-        const stateEmoji: Record<CatState, string> = {
+        const stateEmoji: Record<ShibaState, string> = {
           idle: '🧍',
           wander: '🚶',
           sit: '🪑',
@@ -170,8 +174,8 @@ const Cat3DComponent = ({ onDragChange, onCatchingChange, yarnPosition }: Cat3DC
     event.stopPropagation();
     setIsDragging(true);
 
-    if (catRef.current) {
-      catRef.current.setDragging(true);
+    if (shibaRef.current) {
+      shibaRef.current.setDragging(true);
 
       // 드래그 평면 설정 (Y=0 평면)
       dragPlaneRef.current.setFromNormalAndCoplanarPoint(
@@ -185,12 +189,12 @@ const Cat3DComponent = ({ onDragChange, onCatchingChange, yarnPosition }: Cat3DC
       const intersectPoint = new THREE.Vector3();
       raycaster.ray.intersectPlane(dragPlaneRef.current, intersectPoint);
 
-      dragOffsetRef.current.copy(intersectPoint).sub(catRef.current.group.position);
+      dragOffsetRef.current.copy(intersectPoint).sub(shibaRef.current.group.position);
     }
   };
 
   const handlePointerMove = (event: ThreeEvent<PointerEvent>) => {
-    if (!isDragging || !catRef.current) return;
+    if (!isDragging || !shibaRef.current) return;
 
     event.stopPropagation();
 
@@ -202,13 +206,13 @@ const Cat3DComponent = ({ onDragChange, onCatchingChange, yarnPosition }: Cat3DC
 
     // 오프셋 적용
     const newPosition = intersectPoint.sub(dragOffsetRef.current);
-    catRef.current.setPosition(newPosition.x, newPosition.z);
+    shibaRef.current.setPosition(newPosition.x, newPosition.z);
   };
 
   const handlePointerUp = () => {
-    if (isDragging && catRef.current) {
+    if (isDragging && shibaRef.current) {
       setIsDragging(false);
-      catRef.current.setDragging(false);
+      shibaRef.current.setDragging(false);
     }
   };
 
@@ -232,11 +236,11 @@ const Cat3DComponent = ({ onDragChange, onCatchingChange, yarnPosition }: Cat3DC
     );
   }
 
-  if (!catGroup) return null;
+  if (!shibaGroup) return null;
 
   return (
     <primitive
-      object={catGroup}
+      object={shibaGroup}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -245,4 +249,4 @@ const Cat3DComponent = ({ onDragChange, onCatchingChange, yarnPosition }: Cat3DC
   );
 };
 
-export default Cat3DComponent;
+export default Shiba3DComponent;

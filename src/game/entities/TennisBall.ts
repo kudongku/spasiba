@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
-export class YarnBall {
+export class TennisBall {
   public group: THREE.Group;
   private mesh: THREE.Mesh | null = null;
   private model: THREE.Group | null = null;
