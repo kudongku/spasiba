@@ -12,3 +12,8 @@ body {
   width: 100vw;
   height: 100vh;
 }
+
+/* 캔버스 위에서 기본 커서 숨기기 */
+canvas {
+  cursor: none;
+}
