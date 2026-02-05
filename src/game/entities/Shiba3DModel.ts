@@ -21,10 +21,6 @@ export class Shiba3DModel {
   private isModelLoaded: boolean;
   private isFollowing: boolean;
 
-  // 로딩 상태
-  public isLoading: boolean;
-  public loadError: string | null;
-
   constructor(x: number, z: number, screenWidth: number, screenHeight: number) {
     this.group = new THREE.Group();
     this.isDragging = false;
@@ -40,10 +36,6 @@ export class Shiba3DModel {
     this.isModelLoaded = false;
     this.isFollowing = false;
 
-    // 로딩 상태
-    this.isLoading = true;
-    this.loadError = null;
-
     // 초기 위치
     this.group.position.set(x, 0, z);
   }
@@ -53,9 +45,6 @@ export class Shiba3DModel {
    */
   public async loadModel(modelPath: string): Promise<void> {
     try {
-      this.isLoading = true;
-      this.loadError = null;
-
       const loader = new GLTFLoader();
       const gltf = await loader.loadAsync(modelPath);
 
@@ -92,13 +81,10 @@ export class Shiba3DModel {
       }
 
       this.isModelLoaded = true;
-      this.isLoading = false;
 
       // 초기 상태 시작
       this.transitionToNextState();
     } catch (error) {
-      this.isLoading = false;
-      this.loadError = error instanceof Error ? error.message : 'Unknown error';
       console.error('Failed to load model:', error);
       throw error;
     }
@@ -156,8 +142,7 @@ export class Shiba3DModel {
   private playAnimation(name: ShibaAnimationType | string): void {
     if (!this.mixer || this.animations.size === 0) return;
 
-    const normalizedName = name;
-    const action = this.animations.get(normalizedName);
+    const action = this.animations.get(name);
 
     if (action) {
       // 이전 애니메이션 정리 (death 애니메이션이 아닐 때만)
@@ -166,7 +151,7 @@ export class Shiba3DModel {
       }
 
       // Death 애니메이션은 특별 처리: 정방향 -> 3초 대기 -> 역방향
-      if (normalizedName === 'death') {
+      if (name === 'Death') {
         action.reset();
         action.setLoop(THREE.LoopOnce, 1);
         action.clampWhenFinished = true;
@@ -232,8 +217,7 @@ export class Shiba3DModel {
 
     // Death 애니메이션은 더 긴 시간 필요 (정방향 + 3초 대기 + 역방향)
     if (selectedAnimation === 'Death') {
-      const normalizedName = 'Death';
-      const action = this.animations.get(normalizedName);
+      const action = this.animations.get('Death');
       const animationDuration = action ? action.getClip().duration * 1000 : 1000;
       this.stateDuration = animationDuration * 2 + 3000; // 약 5-6초
     } else {
@@ -528,11 +512,6 @@ export class Shiba3DModel {
   public setPosition(x: number, z: number): void {
     this.group.position.x = x;
     this.group.position.z = z;
-  }
-
-  public updateScreenSize(width: number, height: number): void {
-    this.screenWidth = width;
-    this.screenHeight = height;
   }
 
   public destroy(): void {

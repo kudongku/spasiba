@@ -2,10 +2,6 @@ import { type ThreeEvent, useFrame } from '@react-three/fiber';
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Shiba3DModel } from '@/game/entities/Shiba3DModel';
-import type { ShibaState } from '@/types/game';
-
-// 사용할 모델 타입 선택
-type ShibaType = Shiba3DModel;
 
 interface Shiba3DComponentProps {
   onDragChange?: (isDragging: boolean) => void;
@@ -18,7 +14,7 @@ const Shiba3DComponent = ({
   onCatchingChange,
   tennisPosition,
 }: Shiba3DComponentProps) => {
-  const shibaRef = useRef<ShibaType | null>(null);
+  const shibaRef = useRef<Shiba3DModel | null>(null);
   const [shibaGroup, setShibaGroup] = useState<THREE.Group>(new THREE.Group());
 
   const [isDragging, setIsDragging] = useState(false);
@@ -26,7 +22,6 @@ const Shiba3DComponent = ({
   const dragPlaneRef = useRef<THREE.Plane>(new THREE.Plane());
   const dragOffsetRef = useRef<THREE.Vector3>(new THREE.Vector3());
   const prevCatchingState = useRef<boolean>(false);
-  const prevState = useRef<ShibaState | null>(null);
 
   // 모델 로딩
   useEffect(() => {
@@ -66,16 +61,6 @@ const Shiba3DComponent = ({
     };
   }, []);
 
-  // 화면 크기 업데이트
-  useEffect(() => {
-    if (shibaRef.current) {
-      // Three.js 단위로 변환 (픽셀 → 월드 단위)
-      const worldWidth = 20;
-      const worldHeight = 20;
-      shibaRef.current.updateScreenSize(worldWidth, worldHeight);
-    }
-  }, []);
-
   // 드래그 상태 변경 시 부모에게 알림
   useEffect(() => {
     if (onDragChange) {
@@ -105,19 +90,12 @@ const Shiba3DComponent = ({
   // 애니메이션 루프
   useFrame((_state, delta) => {
     if (shibaRef.current) {
-      // Shiba3DModel은 delta를 직접 사용
       shibaRef.current.update(delta);
 
-      // 상태 변경 추적
+      // Catching 상태 체크
       const currentState = shibaRef.current.getState();
-
-      // 상태가 변경되었을 때 로그 출력
-      if (currentState !== prevState.current) {
-        prevState.current = currentState;
-      }
-
-      // Catching 상태 체크 (기존 로직 유지)
       const currentIsCatching = currentState === 'catching';
+
       if (currentIsCatching !== prevCatchingState.current) {
         prevCatchingState.current = currentIsCatching;
         setIsCatching(currentIsCatching);
