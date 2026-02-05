@@ -13,7 +13,7 @@ body {
   height: 100vh;
 }
 
-/* 캔버스 위에서 기본 커서 숨기기 */
-canvas {
-  cursor: none;
+/* 테니스공 커서 스타일 */
+.tennis-ball-cursor {
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="%23ccff00" stroke="%23ffffff" stroke-width="2"/><path d="M 8 10 Q 16 16 8 22" fill="none" stroke="%23ffffff" stroke-width="2"/><path d="M 24 10 Q 16 16 24 22" fill="none" stroke="%23ffffff" stroke-width="2"/></svg>') 16 16, auto;
 }
