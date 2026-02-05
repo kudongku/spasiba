@@ -36,8 +36,8 @@ const Shiba3DComponent = ({
         // 3D 모델 로드 시도
         const shibaModel = new Shiba3DModel(0, 0, 20, 20);
 
-        // 모델 파일 로드 (public 폴더의 파일)
-        await shibaModel.loadModel('/models/shiba-inu.glb');
+        // 모델 파일 로드 (public 폴더의 파일, base URL 포함)
+        await shibaModel.loadModel(`${import.meta.env.BASE_URL}models/shiba-inu.glb`);
 
         if (!isMounted) {
           shibaModel.destroy();

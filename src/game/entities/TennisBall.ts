@@ -7,7 +7,7 @@ export class TennisBall {
 
   constructor() {
     this.group = new THREE.Group();
-    this.loadModel('/models/tennis-ball.glb');
+    this.loadModel(`${import.meta.env.BASE_URL}models/tennis-ball.glb`);
   }
 
   /**
