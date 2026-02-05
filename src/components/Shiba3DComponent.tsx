@@ -19,9 +19,7 @@ const Shiba3DComponent = ({
   tennisPosition,
 }: Shiba3DComponentProps) => {
   const shibaRef = useRef<ShibaType | null>(null);
-  const [shibaGroup, setShibaGroup] = useState<THREE.Group | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [shibaGroup, setShibaGroup] = useState<THREE.Group>(new THREE.Group());
 
   const [isDragging, setIsDragging] = useState(false);
   const [isCatching, setIsCatching] = useState(false);
@@ -36,9 +34,6 @@ const Shiba3DComponent = ({
 
     const loadShiba = async () => {
       try {
-        setIsLoading(true);
-        setLoadError(null);
-
         // 3D 모델 로드 시도
         const shibaModel = new Shiba3DModel(0, 0, 20, 20);
 
@@ -52,17 +47,10 @@ const Shiba3DComponent = ({
 
         shibaRef.current = shibaModel;
         setShibaGroup(shibaModel.group);
-        setIsLoading(false);
-
-        console.log('3D model loaded successfully');
-        console.log('Available animations:', shibaModel.getAvailableAnimations());
       } catch (error) {
         console.error('Failed to load 3D model:', error);
 
         if (!isMounted) return;
-
-        setIsLoading(false);
-        setLoadError(error instanceof Error ? error.message : '모델 로딩 실패');
       }
     };
 
@@ -74,7 +62,7 @@ const Shiba3DComponent = ({
         shibaRef.current.destroy();
         shibaRef.current = null;
       }
-      setShibaGroup(null);
+      setShibaGroup(new THREE.Group());
     };
   }, []);
 
@@ -107,7 +95,6 @@ const Shiba3DComponent = ({
 
     // catching 상태면 following 멈춤
     if (isCatching) {
-      console.log('⏸️  Stopping follow - shiba is catching');
       return;
     }
 
@@ -117,7 +104,7 @@ const Shiba3DComponent = ({
 
   // 애니메이션 루프
   useFrame((_state, delta) => {
-    if (shibaRef.current && !isLoading) {
+    if (shibaRef.current) {
       // Shiba3DModel은 delta를 직접 사용
       shibaRef.current.update(delta);
 
@@ -126,11 +113,7 @@ const Shiba3DComponent = ({
 
       // 상태가 변경되었을 때 로그 출력
       if (currentState !== prevState.current) {
-        console.log(`🐕 Shiba state changed: ${prevState.current} → ${currentState}`);
         prevState.current = currentState;
-
-        // 애니메이션 이모지로 상태 표시
-        console.log(`Current state: ${currentState}`);
       }
 
       // Catching 상태 체크 (기존 로직 유지)
@@ -191,28 +174,6 @@ const Shiba3DComponent = ({
       shibaRef.current.setDragging(false);
     }
   };
-
-  // 로딩 중
-  if (isLoading) {
-    return (
-      <mesh position={[0, 0.5, 0]}>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color="#888888" />
-      </mesh>
-    );
-  }
-
-  // 에러 발생 시
-  if (loadError) {
-    return (
-      <mesh position={[0, 1, 0]}>
-        <boxGeometry args={[2, 2, 2]} />
-        <meshStandardMaterial color="#ff0000" />
-      </mesh>
-    );
-  }
-
-  if (!shibaGroup) return null;
 
   return (
     <primitive

@@ -1,6 +1,6 @@
 import { OrbitControls } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import MouseTracker from '@/components/MouseTracker';
 import Shiba3DComponent from '@/components/Shiba3DComponent';
 import TennisBallComponent from '@/components/TennisBallComponent';
@@ -15,26 +15,28 @@ const ThreeCanvas = () => {
   const [mouseWorldPos, setMouseWorldPos] = useState<{ x: number; z: number } | null>(null);
   const [showTennis, setShowTennis] = useState(true);
 
-  const handleMouseMove = (worldPos: { x: number; z: number }) => {
-    setMouseWorldPos(worldPos);
-    // 마우스 움직이면 테니스 공 다시 표시
-    if (!showTennis) {
-      setShowTennis(true);
-    }
-    // catching 상태 해제
-    if (isCatching) {
-      setIsCatching(false);
-    }
-  };
+  const handleMouseMove = useCallback(
+    (worldPos: { x: number; z: number }) => {
+      setMouseWorldPos(worldPos);
+      // 마우스 움직이면 테니스 공 다시 표시
+      if (!showTennis) {
+        setShowTennis(true);
+      }
+      // catching 상태 해제
+      if (isCatching) {
+        setIsCatching(false);
+      }
+    },
+    [showTennis, isCatching]
+  );
 
-  const handleCatchingChange = (catching: boolean) => {
-    console.log('Catching state changed:', catching);
+  const handleCatchingChange = useCallback((catching: boolean) => {
     setIsCatching(catching);
     // catching 시작되면 테니스 공 숨김
     if (catching) {
       setShowTennis(false);
     }
-  };
+  }, []);
 
   return (
     <Canvas camera={{ position: [0, 8, 12], fov: 50 }} style={{ width: '100%', height: '100%' }}>

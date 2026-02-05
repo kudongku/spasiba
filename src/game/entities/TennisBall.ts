@@ -68,8 +68,6 @@ export class TennisBall {
 
       this.group.add(this.model);
 
-      console.log('Tennis ball model loaded successfully');
-
       // 모델 로드 성공 후 기존 메시 제거
       if (this.mesh) {
         this.group.remove(this.mesh);

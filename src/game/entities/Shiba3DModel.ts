@@ -66,12 +66,7 @@ export class Shiba3DModel {
 
       // 모델 바운딩 박스 계산 (디버깅용)
       const box = new THREE.Box3().setFromObject(this.model);
-      const size = box.getSize(new THREE.Vector3());
       const center = box.getCenter(new THREE.Vector3());
-
-      console.log('Model size:', size);
-      console.log('Model center:', center);
-      console.log('Model children count:', this.model.children.length);
 
       // 모델 스케일 조정 (Shiba Inu 모델용 - 크기 증가)
       this.model.scale.set(1, 1, 1);
@@ -90,8 +85,6 @@ export class Shiba3DModel {
           const action = this.mixer.clipAction(clip);
           const normalizedName = this.normalizeAnimationName(clip.name);
           this.animations.set(normalizedName, action);
-
-          console.log(`Animation loaded: ${clip.name} -> ${normalizedName}`);
         }
 
         // 기본 애니메이션 시작 (idle)
@@ -105,8 +98,6 @@ export class Shiba3DModel {
 
       // 초기 상태 시작
       this.transitionToNextState();
-
-      console.log('Model loaded successfully');
     } catch (error) {
       this.isLoading = false;
       this.loadError = error instanceof Error ? error.message : 'Unknown error';
@@ -185,7 +176,6 @@ export class Shiba3DModel {
       for (const [key, value] of this.animations.entries()) {
         if (key.includes(normalizedName) || normalizedName.includes(key)) {
           action = value;
-          console.log(`Animation fallback: ${name} -> ${key}`);
           break;
         }
       }
@@ -194,7 +184,6 @@ export class Shiba3DModel {
     // 애니메이션이 없으면 첫 번째 애니메이션 사용
     if (!action && this.animations.size > 0) {
       action = Array.from(this.animations.values())[0];
-      console.log(`Animation fallback: using first animation for ${name}`);
     }
 
     if (action && action !== this.currentAnimation) {
@@ -484,7 +473,6 @@ export class Shiba3DModel {
     // 머리 근처에 있으면 catching 상태로
     if (distanceToHead < 0.8) {
       if (this.state !== 'catching') {
-        console.log('🐕 Catching tennis ball! Distance to head:', distanceToHead);
         this.enterCatching();
       }
       return;
