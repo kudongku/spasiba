@@ -24,18 +24,23 @@
 - `import type`으로 타입 임포트를 분리합니다.
 - Utility Types를 적극 활용합니다 (`Partial`, `Pick`, `Omit`, `Record` 등).
 
+### Import 경로 규칙
+
+- **절대 경로(`@` alias) 필수**: 상대 경로(`./`, `../`) 사용 금지
+- 모든 `src/` 내부 모듈 임포트는 `@/` prefix 사용
+- 외부 라이브러리 임포트는 그대로 사용
+
 ```typescript
 // Good
-import type { CatState } from './types';
+import type { CatState } from '@/types';
+import { Cat3DModel } from '@/game/entities/Cat3DModel';
+import Cat3DComponent from '@/components/Cat3DComponent';
 import { create } from 'zustand';
 
-interface Position {
-  x: number;
-  y: number;
-}
-
-// Bad
-import { CatState, create } from './mixed-imports';
+// Bad - 상대 경로 사용 금지
+import type { CatState } from './types';
+import { Cat3DModel } from '../game/entities/Cat3DModel';
+import Cat3DComponent from './Cat3DComponent';
 ```
 
 ## React
