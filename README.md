@@ -75,7 +75,8 @@ pnpm check
 /
 ├── public/
 │   └── models/               # 3D 모델 파일 (.glb)
-│       └── Shiba Inu.glb     # 시바견 3D 모델 (애니메이션 포함)
+│       ├── shiba-inu.glb     # 시바견 3D 모델 (애니메이션 포함)
+│       └── tennis-ball.glb   # 테니스 공 3D 모델
 └── src/
     ├── components/           # React 컴포넌트
     │   ├── ThreeCanvas.tsx       # Three.js 메인 캔버스

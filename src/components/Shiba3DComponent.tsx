@@ -55,7 +55,7 @@ const Shiba3DComponent = ({
         const shibaModel = new Shiba3DModel(0, 0, 20, 20);
 
         // 모델 파일 로드 (public 폴더의 파일)
-        await shibaModel.loadModel('/models/Shiba%20Inu.glb');
+        await shibaModel.loadModel('/models/shiba-inu.glb');
 
         if (!isMounted) {
           shibaModel.destroy();

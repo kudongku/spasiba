@@ -16,7 +16,7 @@ export class TennisBall {
     this.createDefaultMesh();
 
     // 테니스 공 모델 자동 로드
-    this.loadModel('/models/Tennis ball.glb');
+    this.loadModel('/models/tennis-ball.glb');
   }
 
   /**
